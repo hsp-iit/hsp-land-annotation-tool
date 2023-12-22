@@ -17,7 +17,7 @@ def initialize_method(method):
 
 def main(args):
     
-    VDB = VideoDatabase("hsp-land")
+    VDB = VideoDatabase(args.dataset)
     frames = VDB.get_frames_for_video(args.video)
     exp_folder = VDB.folder_for_video(args.folder, args.video)
     visualization_folder = VDB.folder_for_video(args.output, args.video)
@@ -32,6 +32,7 @@ if __name__ == '__main__':
     parser.add_argument('--method', type=str, required=True)
     parser.add_argument('--output', type=str, required=True)
     parser.add_argument('--folder', type=str, required=True)
+    parser.add_argument('--dataset', type=str, default="hsp-land")               
     parser.add_argument('--font_size', type=int, default=28)    
     args, _ = parser.parse_known_args()
     

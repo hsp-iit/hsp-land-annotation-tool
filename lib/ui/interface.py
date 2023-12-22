@@ -609,7 +609,7 @@ class DataRefinement(QWidget):
             self.show_message_box("No subsequence to be proccessed.")
             return
             
-        refine = Refinement(self.pickle_files_folder)
+        refiner = Refinement(self.pickle_files_folder)
         
         for seq in sequences:    
         
@@ -617,10 +617,10 @@ class DataRefinement(QWidget):
             
             frames = self.infos.get_images(start=seq["start"], end=seq["end"])
             
-            refine.set_frames(frames)
-            refine.set_starting_mask(seq["mask_1"])
-            refine.get_pickle_files(self.current_method, self.current_secondary)
-            new_annotation = refine.refine(self.current_method)
+            refiner.set_frames(frames)
+            refiner.set_starting_mask(seq["mask_1"])
+            refiner.get_pickle_files(self.current_method, self.current_secondary)
+            new_annotation = refiner.refine(self.current_method)
                         
             self.current_entity.add_annotation(new_annotation)
             self.current_entity.set_cut_status(seq["end"], 2)

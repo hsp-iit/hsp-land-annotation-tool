@@ -1,9 +1,9 @@
 import os
 
 # target folder where to store the qualitative outputs
-output_folder = "results"
+output_folder_qualitative = "results"
 output_folder_multi_visualization = "multivis"
-output_folder_real = "results_files"
+output_folder_files = "results_files"
 
 # list of (sub)sequences to process
 sequences = [
@@ -42,7 +42,7 @@ sequences = [
 # main processing loop
 for seq in sequences:
 
-    cmd = f"./src/utils/process_sequence.sh {seq['name']} {seq['limits'][0]} {seq['limits'][1]} \"{seq['prompts']}\" {output_folder} {output_folder_multi_visualization} {output_folder_real} {seq['gaze']}"
+    cmd = f"./src/utils/process_sequence.sh {seq['name']} {seq['limits'][0]} {seq['limits'][1]} \"{seq['prompts']}\" {output_folder_qualitative} {output_folder_multi_visualization} {output_folder_files} {seq['gaze']}"
     
     print(f"[EXP DEBUG PICKLE] Running: {cmd}")
     os.system(cmd)

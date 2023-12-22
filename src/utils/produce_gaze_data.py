@@ -5,6 +5,8 @@ from math import cos, sin, pi
 from lib.utils.VideoDatabase import VideoDatabase
 from pathlib import Path
         
+# --------------------------------------------------------------------
+        
 def produce_gaze_files(images_folder, gaze_folder):
     
     files = os.listdir(images_folder)
@@ -16,10 +18,9 @@ def produce_gaze_files(images_folder, gaze_folder):
         full_gaze_filename = os.path.join(gaze_folder, f"{base}.txt")
         Path(full_gaze_filename).touch()
 
-        
 def main(args):      
         
-    VDB    = VideoDatabase("hsp-land")
+    VDB    = VideoDatabase(args.dataset)
     info   = VDB.load_video_info(args.video)
     fps = info["fps"]
     
@@ -49,11 +50,14 @@ def main(args):
             writefile.writelines(f"{x},{y},{3}\n")
             writefile.writelines(f"{x2},{y2},{5}\n")
             
+# --------------------------------------------------------------------
+            
 if __name__ == '__main__':
 
     parser = argparse.ArgumentParser(description='Description')
     parser.add_argument('--video', type=str, required=True)
     parser.add_argument('--output', type=str, default="gaze")
+    parser.add_argument('--dataset', type=str, default="hsp-land")
     parser.add_argument('--period', type=int, default=4)    
     args, _ = parser.parse_known_args()
     

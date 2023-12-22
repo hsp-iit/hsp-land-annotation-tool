@@ -259,8 +259,3 @@ class Refinement(object):
                 
         func = getattr(self, f'refine_{method}')
         return func()
-                
-    def write(self):
-      
-        output = "/home/iit.local/dmalafronte/Private/HSP_LAND/Source/hsp_land/data/hsp-land/1/tmp.mp4"
-        media.write_video(output, self.video_viz, fps=24, qp=18)
