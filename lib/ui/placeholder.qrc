@@ -1,0 +1,8 @@
+<RCC>
+  <qresource prefix="frame">
+    <file>frame-002561.jpg</file>
+  </qresource>
+  <qresource prefix="result">
+    <file>frame-002561.jpg</file>
+  </qresource>
+</RCC>
