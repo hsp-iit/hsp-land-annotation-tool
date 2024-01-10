@@ -12,7 +12,9 @@ All these codebases can be used in one of two ways, either:
 
 ## Repositories to install
 
-To make use of all the functionalities available, the user should get and install the repositories listed below.
+To make use of all the functionalities available, the user should get and install the repositories listed below. 
+
+Make sure that all the repositories are cloned and installed within the same root folder, e.g. `/home/user/source`.
 
 - **Segmentation** 
   - Segment Anything [REPO](https://github.com/facebookresearch/segment-anything) - [PAPER](https://arxiv.org/abs/2304.02643)
@@ -28,36 +30,48 @@ To make use of all the functionalities available, the user should get and instal
 - **Tracking**
   - TAPIR [REPO](https://github.com/deepmind/tapnet) - [PAPER](https://arxiv.org/abs/2211.03726)
 
+Once all the codebases have been set up, clone the `hsp-land-annotation-tool` repository within the same `/home/user/source` folder.
+
+**NOTE**: in the following of this README, we assume that the user has stored all the codebases within the same `/home/user/source` directory.
+
+Finally, download and install the [Anaconda package manager](https://www.anaconda.com/download). Once the installation is done, move to this repository folder and create the Anaconda environment from the .yml file available.
+
+```bash
+cd \home\usr\source
+conda env create -f environment.yml
+```
+
+### Model Checkpoints
+
+The user should create a `weights` folder within the `hsp-land-annotation-tool` repository. Here, they should gather the checkpoints needed by some of the techniques employed within this framework. At the time of writing of this README document (December 2023), the files contained in the `weights` folder are:
+
+- gmflow-scale2-regrefine6-mixdata-train320x576-4e7b215d.pth (UniMatch)
+- mf2_model_final_94dc52.pkl (Mask2Former)
+- rd16-uni.pth (CLIPSeg)
+- rd64-uni.pth (CLIPSeg)
+- rd64-uni-refined.pth (CLIPSeg)
+- seem_focall_v1.pt (Segment Everything Everywhere All At Once)
+
+These files should be retrieved by the corresponding repositories, and copied within the `weights` directory just created.
+
+At this point, everything should be set up correctly.
+
 In case the user decides to follow the installation steps above, skip the following subsection (**Singularity Image**) and jump directly to **General**.
 
-## Singularity Image
+## Singularity Image (work in progress)
 
-[TODO]
+First, download the singularity image [available here]().
+
+This section is a draft, and will be completed once the Singularity/Docker image will be available.
 
 # General
 
 This codebase has been built with a couple of objectives in mind:
 
-- ease of use for external, non-technical users
 - flexibility w.r.t. the set of videos employed 
-- simply to expand with novel methods
+- ease of use for external, non-technical users
+- should be simple to expand with novel methods
 
-## Ease of Use
-
-The code is structured in a way to separate the pipeline in a few macro-step:
-
-- **dataset creation**: needed to convert a set of sequences from video files to frames, via the `src/utils/create_dataset.py` script
-- **feature extraction**: driven by the scripts in the `src/sample` and `src/utils` directories
-- **annotation and refinement**: carried out via the `lib/ui/interface.py` GUI-based program
-
-The two steps are explained further down within this README.
-
-<!-- For these reasons, the code will provide a restricted set of interfaces for the user, mainly through the use of a few principal scripts:
-
-- `src/process_video.py`: for the computation of the output of the several methods available
-- `src/viewers/viewer.py`: for the creation of qualitative images, associated with the outcome of one of the processing operations carried out
-
-This pipeline will be constantly updated, and has been already improved with the introduction of the `sample_process_exp1.py` and `process_sequence.sh` scripts, detailed at the end of this README. -->
 
 ## Flexibility w.r.t. the Set of Videos
 
@@ -65,23 +79,19 @@ This feature is enabled by the data structure used within the development of thi
 
 ### **Data Structure**
 
-The data is organized in a way so that any video file can be included in the dataset, still mantaining a proper organization of the subfolders.
+The data is organized in a way so that any video file can be included in the dataset, while mantaining a proper organization of the subfolders.
 
-Irrespectively from the video original filename, each video is now identified by a single incremental "ID", from 1 and onwards.
+Irrespectively from the video original filename, each video is identified within the framework by a single incremental "ID", from 1 and onwards.
 
-The code provides a transparent interface to include a novel video, or to retrieve an existing one, the `VideoDatabase` object:
+This codebase provides a transparent interface to include a novel video, or to retrieve an existing one, the `VideoDatabase` object, which is used mainly by the `src/utils/create_dataset.py` script.
 
-```python
-VDB = VideoDatabase("hsp-land")    
-VDB.add_video("data/videos/DESPICABLEME_eng.mp4")
-VDB.add_video("data/videos/Fun_with_fractals.mp4")
-VDB.add_video("data/videos/PRESENT.mp4")
-VDB.add_video("data/videos/TOTORO_trees_eng.mp4")
-VDB.add_video("data/videos/MICHELE.mp4")
-VDB.add_video("data/videos/train_neutral.mp4")
+This script handles the creation of a new dataset of videos, starting from the ones contained in a folder specified by the user. By opening a terminal and setting the working directory in the root folder of the repository, the script should be launched in the following way:
+
+```bash
+python src/utils/create_dataset.py --dataset hsp-land --folder data/videos
 ```
 
-This will create the `data/databases/hsp-land.json` file, which acts as an auxiliary file to identify each video within the database:
+Assuming that the `data/videos` subfolder of the repository contains a set of video sequences, this will create the `data/databases/hsp-land.json` file, which acts as an auxiliary file to identify each video within the database:
 
 ```json
 {
@@ -112,21 +122,7 @@ This will create the `data/databases/hsp-land.json` file, which acts as an auxil
 }
 ```
 
-**NOTE**: that the code above will also create all the frames corresponding to a video, stored within `data/<dataset_name>/<video_id>/images`.
-
-At this point, it is possible to retrieve the frames for a specific video, with the possibility to subsample them (note that the number specified is not the target *framerate*, but instead just a subsampling factor):
-
-```python
-frames = VDB.get_frames_for_video("data/videos/Fun_with_fractals.mp4", subsample = 5)
-```
-
-At this point, we might need to create a novel folder for an experiment. Since the main idea is for the data structure to be transparent (at the code level), the user can obtain a new folder for a given video as in:
-
-```python
-output_folder = VDB.folder_for_video("results/sam", "data/videos/Fun_with_fractals.mp4")
-```
-
-This operation will create the folder tree `results/sam` within the data structure for the dataset, by exploiting the known `filename <--> ID` correspondences.
+**NOTE**: the script above will also create all the frames corresponding to all the videos, stored within `data/<dataset_name>/<video_id>/images`.
 
 After a few experiments or operations, the final data structure might look something like this:
 
@@ -163,44 +159,145 @@ data/
 
 For the sake of the following explanations, in the rest of this README, the folder `video_id/` (as in `1/`, `2/`, ..) for a given sequence will be called `<video_folder>`.
 
+
+## Ease of Use
+
+The framework is structured in a way to separate the pipeline in three macro-step:
+
+- **dataset creation**: needed to convert a set of sequences from video files to frames, via the `src/utils/create_dataset.py` script
+- **feature extraction**: driven by the scripts in the `src/sample` and `src/utils` directories
+- **annotation and refinement**: carried out via the `lib/ui/interface.py` GUI-based program
+
+### Dataset Creation
+
+The creation of a dataset is handled by the `src/utils/create_dataset.py`, as described in the **Data Structure** section above.
+
+### Feature Extraction
+
+The repository is shipped with a sample script (`src/sample/sample_process.py`) which runs all the available algorithms on all the six initial videos considered for this project.
+
+As it can be seen by inspecting its content, this file specifies the processing of a set of sequences, within specific intervals.
+
+```python
+# target folder where to store the qualitative outputs
+output_folder_qualitative = "results"
+output_folder_multi_visualization = "multivis"
+output_folder_files = "results_files"
+
+# list of (sub)sequences to process
+sequences = [
+             {"name": "data/videos/DESPICABLEME_eng.mp4",
+              "prompts": "'girl with a blue pajama' 'girl with a green sweater' 'girl with glasses' 'man' 'little girl'",
+              "limits": ("1:46","3s"),
+              "gaze": ""},
+             
+             {"name": "data/videos/Fun_with_fractals.mp4",
+              "prompts": "'broccoli'",
+              "limits": ("1:09","3s"),
+              "gaze": ""},
+             
+             {"name": "data/videos/PRESENT.mp4",
+              "prompts": "'a boy' 'a dog' 'a door'",
+              "limits": ("3:03","3s"),
+              "gaze": ""},
+             
+             {"name": "data/videos/TOTORO_trees_eng.mp4",
+              "prompts": "'a child' 'a bunny like monster' 'a tree'",
+              "limits": ("2:15","3s"),
+              "gaze": ""},
+
+             {"name": "data/videos/MICHELE.mp4",
+              "prompts": "'a man' 'a chair' 'a tv screen'",
+              "limits": ("0:48","3s"),
+              "gaze": ""},
+
+             {"name": "data/videos/train_neutral.mp4",
+              "prompts": "'a child' 'a woman' 'a toy car'",
+              "limits": ("0:03","3s"),
+              "gaze": ""}
+
+             ]
+
+# main processing loop
+for seq in sequences:
+
+    cmd = f"./src/utils/process_sequence.sh {seq['name']} {seq['limits'][0]} {seq['limits'][1]} \"{seq['prompts']}\" {output_folder_qualitative} {output_folder_multi_visualization} {output_folder_files} {seq['gaze']}"
+    
+    print(f"[EXP DEBUG PICKLE] Running: {cmd}")
+    os.system(cmd)
+```
+
+**NOTE**: The `"limits"` entries should be specified in the format `(starting_time,duration_in_seconds)`.
+
+To prepare and run the processing script, the user should now run the following commands in a terminal (note, this is a temporary solution):
+
+```bash
+conda activate hsp-land
+
+export PYTHONPATH=:/home/user/source/clipseg:/home/user/source/Mask2Former:/home/user/source/Mask2Former/demo:/home/user/source/Segment-Everything-Everywhere-All-At-Once/demo_code:/home/user/source/unimatch:/home/user/source/tapnet
+```
+
+Finally, the user can start the actual processing step:
+
+```bash
+python src/utils/sample_process.py
+```
+
+The outcome of the processing will be saved in the `results/` and `results_files/` subfolders within the dataset directory tree, together with a multi-visualization involving the CLIP-Seg, SPIGA, MaskFormer2, MMPose, Segment Everything Everywhere All at Once, and UniMatch methods.
+
+---
+
+### More in detail: the `process_sequence.sh` script
+
+This script carries out the processing with all the methods available and creates the "multi-visualization" from the results. 
+
+For now, all the methods included in the framework are run sequentially, one further customization of this script will be in the direction of allowing to select the techniques to actually run once executed.
+
+```bash
+...
+
+python3 src/smart_process_video.py --method clipseg ...
+
+python3 src/smart_process_video.py --method spiga ...
+
+python3 src/smart_process_video.py --method mf2 ...
+
+python3 src/smart_process_video.py --method mmpose ...
+
+python3 src/smart_process_video.py --method seem ...
+
+python3 src/smart_process_video.py --method unimatch ...
+
+python3 src/viewers/multiview.py --format 1:base:images 1:spiga:$output_folder/spiga 1:mmpose:$output_folder/mmpose 2:clipseg:$output_folder/clipseg 2:mf2:$output_folder/mf2 2:unimatch:$output_folder/unimatch 3:seem:$output_folder/seem --output $output_folder_multivis --video $video_title --target_height 600 --padding 8 $start_text
+```
+
+---
+
+### Annotation Refinement
+
+Once all the processing has been executed, the framework has completed the extraction of all the features required, for the videos within the dataset used.
+
+The GUI provided within this framework exploits the information contained in the features extracted in the previous step, and allows the user to annotate the sequence in a fine-grained manner, creating custom entities (e.g. associated with the characters acting in the scenes) and the corresponding per-frame annotations.
+
+![SPIGA](assets/images/gui.png)
+
+The GUI can be launched with the following command:
+
+```bash
+python lib/ui/interface.py
+```
+
+After the interface has been loaded, the user should click on the "File..." menu, then on the "Open" entry. The user should then navigate to a subfolder within the `data/` directory corresponding to one of the videos which has been processed. Once there, they should click on the two folders which have been specified as the `output_folder_qualitative` and `output_folder_files` within the `sample_process.py` script.
+
+Once the data is loaded, the user can proceed using the GUI to carry out the annotation, as explained in the video tutorial available [at this link]().
+<!--
 ## Easy to Expand with Novel Methods
 
 [explain the Wrapper idea and style]
 
-# Methods
+ # Methods
 
-<!-- There is a set of candidate methods up to this point, which we will consider incrementally and for which a set of initial results will be reported over time.
-
-- **Segmentation** 
-  - Segment Anything [REPO](https://github.com/facebookresearch/segment-anything) - [PAPER](https://arxiv.org/abs/2304.02643)
-  - CLIP-Seg [REPO](https://github.com/timojl/clipseg) - [PAPER](https://arxiv.org/abs/2112.10003)
-  - OneFormer [REPO](https://github.com/SHI-Labs/OneFormer) - [PAPER](https://arxiv.org/abs/2211.06220)
-  - MaskFormer [REPO](https://github.com/facebookresearch/MaskFormer) - [PAPER](https://arxiv.org/abs/2107.06278)
-  - Mask2Former [REPO](https://github.com/facebookresearch/Mask2Former) - [PAPER](https://arxiv.org/abs/2112.01527)
-  - Segment Everything Everywhere All at Once [REPO](https://github.com/UX-Decoder/Segment-Everything-Everywhere-All-At-Once) - [PAPER](https://arxiv.org/abs/2304.06718)
-- **Face Landmarks Estimation**
-  - SPIGA [REPO](https://github.com/andresprados/spiga) - [PAPER](https://arxiv.org/abs/2210.07233)
-- **Body Pose Estimation** 
-  - MMPose [REPO](https://github.com/open-mmlab/mmpose)
-- **Optical Flow Estimation** 
-  - UniMatch [REPO](https://github.com/autonomousvision/unimatch) - [PAPER](https://arxiv.org/abs/2211.05783)
-- **Tracking**
-  - TrackAnything [REPO](https://github.com/gaomingqi/Track-Anything) - [PAPER](https://arxiv.org/abs/2304.11968)
-  - TAPIR [REPO](https://github.com/deepmind/tapnet) - [PAPER](https://arxiv.org/abs/2211.03726)
-
-Not all these methods are available at the moment, up to now the repository contains what is needed to compute and visualize the output for these techniques:
-
-- [x] Segment Anything
-- [x] CLIP-Seg
-- [x] SPIGA 
-- [x] Mask2Former
-- [x] MMPose
-- [x] Segment Everything Everywhere All at Once
-- [x] UniMatch
-- [ ] TAPIR
-- [ ] OneFormer
-- [ ] MaskFormer
-- [ ] Track Anything -->
+[remove]
 
 ## CLIP-Seg
 
@@ -273,7 +370,7 @@ python3 src/viewers/view.py --method mmpose --folder results/mmpose --video data
 
 
 
-<!-- ## MaskFormer2
+## MaskFormer2
 
 MaskFormer 2 is one of the top performing recent instance segmentation methods.
 
@@ -287,8 +384,8 @@ python3 src/process_video.py --video data/videos/DESPICABLEME_eng.mp4 --method m
 python3 src/viewers/view.py --method mf2 --folder results/mf2 --video data/videos/DESPICABLEME_eng.mp4 --output visualization/mf2
 ```
 
-![SPIGA](assets/images/sample-mf2.jpg) -->
-
+![SPIGA](assets/images/sample-mf2.jpg)
+ -->
 ---
 
 # Utilities
@@ -317,98 +414,6 @@ python src/utils/produce_gaze_data.py --video data/videos/TOTORO_trees_eng.mp4
 ```
 
 This will create and populate a `gaze/` folder within the dataset, for the video specified. At the moment, the folder is populated with entries representing two dummy gaze sequences with IDs `3` and `5`, moving respectively in a circular and an infinite-like pattern.
-
----
-
-## Run a Sample Experiment on Six Videos
-
-The repository is shipped with a sample script (`src/sample/sample_process_exp1.py`) which runs all the available algorithms on all the six initial videos considered for this project.
-
-```bash
-python src/utils/sample_process_exp1.py
-```
-
-As it can be seen by inspecting its content, this file specifies the processing of a set of sequences, within specific intervals.
-
-```python
-# target folder where to store the qualitative outputs
-output_folder = "results"
-output_folder_multi_visualization = "multivis"
-
-# list of (sub)sequences to process
-sequences = [
-             {"name": "data/videos/DESPICABLEME_eng.mp4",
-              "prompts": "'red curtains' 'a man' 'a little girl'",
-              "limits": ("1:46","3s"),
-              "gaze": ""},
-             
-             {"name": "data/videos/Fun_with_fractals.mp4",
-              "prompts": "'broccoli'",
-              "limits": ("1:09","3s"),
-              "gaze": ""},
-             
-             {"name": "data/videos/PRESENT.mp4",
-              "prompts": "'a boy' 'a dog' 'a door'",
-              "limits": ("3:03","3s"),
-              "gaze": ""},
-             
-             {"name": "data/videos/TOTORO_trees_eng.mp4",
-              "prompts": "'a child' 'a bunny like monster' 'a tree'",
-              "limits": ("2:15","3s"),
-              "gaze": ""},
-
-             {"name": "data/videos/MICHELE.mp4",
-              "prompts": "'a man' 'a chair' 'a tv screen'",
-              "limits": ("0:48","3s"),
-              "gaze": ""},
-
-             {"name": "data/videos/train_neutral.mp4",
-              "prompts": "'a child' 'a woman' 'a toy car'",
-              "limits": ("0:03","3s"),
-              "gaze": ""}
-
-             ]
-
-# main processing loop
-for seq in sequences:
-
-    cmd = f"./src/utils/process_sequence.sh {seq['name']} {seq['limits'][0]} {seq['limits'][1]} \"{seq['prompts']}\" {output_folder} {output_folder_multi_visualization} {seq['gaze']}"
-    
-    print(f"[EXP1] Running: {cmd}")
-    os.system(cmd)
-```
-
-The `"limits"` entries should be specified in the format `(starting_time,duration_in_seconds)`.
-
-The outcome of the processing will be saved in the `results/` subfolders within the dataset directory tree, together with a multi-visualization involving the CLIP-Seg, SPIGA, MaskFormer2, MMPose, Segment Everything Everywhere All at Once, and UniMatch methods.
-
----
-
-### The `process_sequence.sh` script
-
-This script carries out the processing with all the methods available and creates the "multi-visualization" from the results.
-
-For now, all the methods included in the framework are run sequentially, one further customization of this script will be in the direction of allowing to select the techniques to actually run once executed.
-
-```bash
-...
-
-python3 src/smart_process_video.py --method clipseg ...
-
-python3 src/smart_process_video.py --method spiga ...
-
-python3 src/smart_process_video.py --method mf2 ...
-
-python3 src/smart_process_video.py --method mmpose ...
-
-python3 src/smart_process_video.py --method seem ...
-
-python3 src/smart_process_video.py --method unimatch ...
-
-python3 src/viewers/multiview.py --format 1:base:images 1:spiga:$output_folder/spiga 1:mmpose:$output_folder/mmpose 2:clipseg:$output_folder/clipseg 2:mf2:$output_folder/mf2 2:unimatch:$output_folder/unimatch 3:seem:$output_folder/seem --output $output_folder_multivis --video $video_title --target_height 600 --padding 8 $start_text
-```
-
-The `smart_process_video.py` script takes in charge of activating the correct Anaconda environment w.r.t. the `--method` specified as a parameter, so to finally invoke the main processing script.
 
 ---
 
@@ -462,3 +467,20 @@ python3 src/utils/gather_results.py --video data/videos/DESPICABLEME_eng.mp4 --o
 ```
 
 This call will zip the multi-visualization produced by running the code described previously in this repository, zipping all the frames into a `results.zip` file, which can then be easily retrieved remotely with any utility as the `scp` command.
+
+
+
+<!-- 
+At this point, it is possible to retrieve the frames for a specific video, with the possibility to subsample them (note that the number specified is not the target *framerate*, but instead just a subsampling factor):
+
+```python
+frames = VDB.get_frames_for_video("data/videos/Fun_with_fractals.mp4", subsample = 5)
+```
+
+At this point, we might need to create a novel folder for an experiment. Since the main idea is for the data structure to be transparent (at the code level), the user can obtain a new folder for a given video as in:
+
+```python
+output_folder = VDB.folder_for_video("results/sam", "data/videos/Fun_with_fractals.mp4")
+```
+
+This operation will create the folder tree `results/sam` within the data structure for the dataset, by exploiting the known `filename <-> ID` correspondences. -->
