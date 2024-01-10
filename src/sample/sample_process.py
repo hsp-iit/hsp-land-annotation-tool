@@ -44,5 +44,5 @@ for seq in sequences:
 
     cmd = f"./src/utils/process_sequence.sh {seq['name']} {seq['limits'][0]} {seq['limits'][1]} \"{seq['prompts']}\" {output_folder_qualitative} {output_folder_multi_visualization} {output_folder_files} {seq['gaze']}"
     
-    print(f"[EXP DEBUG PICKLE] Running: {cmd}")
+    print(f"[EXP] Running: {cmd}")
     os.system(cmd)
